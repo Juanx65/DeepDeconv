@@ -1,0 +1,13 @@
+numpy
+scipy
+tensorflow>=2.3.0
+jax
+numba
+spectrum
+seaborn
+matplotlib
+ipympl
+cartopy
+osmnx
+h5py
+notebook
