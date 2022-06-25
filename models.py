@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Conv2D, Conv2DTranspose
 from tensorflow.keras.layers import MaxPool2D, UpSampling2D
 from tensorflow.keras.layers import Input, Activation, concatenate
 from tensorflow.keras.layers import GaussianNoise, GaussianDropout
-from tensorflow.keras.optimizers import Adam
+#from tensorflow.keras.optimizers import Adam
 
 
 def calc_padding(k, d):
@@ -43,7 +43,7 @@ class DataGenerator(keras.utils.Sequence):
         return samples
 
     def __data_generation(self):
-        """ Generate a total bitch """
+        """ Generate a total batch """
 
         win = self.win
         X = self.X
@@ -133,7 +133,8 @@ class UNet(keras.Model):
 
     def compile(self):#, opt):
         super(UNet, self).compile()
-        self.opt = tf.keras.optimizers.SGD(learning_rate=0.1)
+        #self.opt = tf.keras.optimizers.SGD(learning_rate=0.1)
+        self.opt = tf.keras.optimizers.Adam()
         pass
 
     def compute_loss(self, Y, Y_hat, X):

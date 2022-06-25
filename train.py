@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import h5py
 from models import UNet
 from models import CallBacks
+from models import DataGenerator
 
 import tensorflow as tf
 import argparse
@@ -87,6 +88,8 @@ def train(opt):
     Nt_deep = Nwin * deep_win
 
     """ Mould data into right shape for UNet """
+
+    ########################################################
     data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
     data_split = np.stack(data_split, axis=0)
     data_split = np.expand_dims(data_split, axis=-1)
@@ -97,15 +100,14 @@ def train(opt):
     r = data_split.shape[0] % batch_size
 
     # Loop over chunks
-
     for i in range(N):
         n_slice = slice(i * batch_size, (i + 1) * batch_size)
-        x_i, _ = model(data_split[n_slice])
+        x_i = data_split[n_slice]
         x[n_slice] = x_i
     # If there is some residual chunk: process that too
     if r > 0:
         n_slice = slice((i + 1) * batch_size, None)
-        x_i, _ = model(data_split[n_slice])
+        x_i = data_split[n_slice]
         x[n_slice] = x_i
     #impulses_deep = np.concatenate(np.squeeze(x), axis=1)
 
