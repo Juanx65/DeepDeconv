@@ -17,6 +17,7 @@ def train(opt):
 
     cwd = os.getcwd()
     datadir = os.path.join(cwd, opt.data_dir)
+    kerneldir =  os.path.join(cwd, opt.kernel_dir)
     data_file = os.path.join(datadir, "DAS_data.h5")
 
     buf = 100_000
@@ -54,7 +55,8 @@ def train(opt):
 
     ########################################3
     """ Load impulse response """
-    kernel = np.load(os.path.join(datadir, "kernel.npy"))
+    #kernel = np.load(os.path.join(datadir, "kernel.npy"))
+    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 
@@ -185,12 +187,12 @@ def train(opt):
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', default = 32, type=int,help='batch size to train')
-    parser.add_argument('--epochs', default = 100 ,type=int,help='epoch to train')
+    parser.add_argument('--batch_size', default = 128, type=int,help='batch size to train')
+    parser.add_argument('--epochs', default = 200 ,type=int,help='epoch to train')
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
-    parser.add_argument('--data_heavy', default = True,type=bool,help='type of data to train, if True, it will traing with the heavy data')
+    parser.add_argument('--kernel_dir', default = "kernels",type=str,help='dir to the dataset')
+    parser.add_argument('--data_heavy', default = False,type=bool,help='type of data to train, if True, it will traing with the heavy data')
     parser.add_argument('--checkpoint', default = "/checkpoints/best.ckpt",type=str,help='dir to save the weights og the training')
-    parser.add_argument('--optimizer', default = 'adam',type=str,help='optimizer for the model ej: adam, sgd, adamax ...')
     parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
 

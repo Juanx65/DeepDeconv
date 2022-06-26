@@ -16,3 +16,10 @@ Para probar la data:
 ```
 python test.py --weights "/weights/best.ckpt"
 ```
+
+
+Para entrenar
+
+```
+python train.py --epochs 1000
+```
