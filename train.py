@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import h5py
 from models import UNet
 from models import CallBacks
-
+from random import choice
 import tensorflow as tf
 import argparse
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
@@ -52,7 +52,7 @@ def train(opt):
     data_int_light = data_int[:, :int(3600 * samp)]
     data_int_heavy = data_int[:, 440_000:int(440_000 + 3600 * samp)]
 
-
+    ########################################3
     """ Load impulse response """
     kernel = np.load(os.path.join(datadir, "kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
@@ -90,10 +90,10 @@ def train(opt):
     data_int_flip = np.array(data_int_flip)
 
     only_time_flip = [np.flip(med) for med in data_int]
-    only_time_flip = [np.array(only_time_flip)]
+    only_time_flip = np.array(only_time_flip)
 
-    print(data_int_flip.shape)
-    data_int = np.concatenate((data_int , data_int_flip , flip24, only_time_flip), axis = 1 )
+    #print(data_int_flip.shape)
+    data_int = np.concatenate((data_int , data_int_flip , flip24), axis = 1 )
 
     """DATA AUGMENTATION ENDS"""
 
@@ -128,15 +128,19 @@ def train(opt):
     #    x[i] =algo2
     # Loop over chunks#
 
+
     for i in range(N):
         n_slice = slice(i * batch_size, (i + 1) * batch_size)
         x_i = data_split[n_slice]
         x[n_slice] = x_i
     # If there is some residual chunk: process that too
     if r > 0:
-        n_slice = slice((i + 1) * batch_size, None)
+        n_slice = slice((N-1 + 1) * batch_size, None)
         x_i = data_split[n_slice]
         x[n_slice] = x_i
+
+    #AUTOTUNE = tf.data.AUTOTUNE
+    #x = x.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 
     #impulses_deep = np.concatenate(np.squeeze(x), axis=1)
 
@@ -151,6 +155,7 @@ def train(opt):
     history = model.fit(
         x,
         validation_split=0.5,
+        shuffle=True,
         epochs=epochs,
         callbacks=[model_checkpoint_callback],
         batch_size=batch_size
@@ -185,7 +190,6 @@ def parse_opt(known=False):
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
     parser.add_argument('--data_heavy', default = True,type=bool,help='type of data to train, if True, it will traing with the heavy data')
     parser.add_argument('--checkpoint', default = "/checkpoints/best.ckpt",type=str,help='dir to save the weights og the training')
-    parser.add_argument('--logs', default = "logs/",type=str,help='dir to save the logs of the training')
     parser.add_argument('--optimizer', default = 'adam',type=str,help='optimizer for the model ej: adam, sgd, adamax ...')
     parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
