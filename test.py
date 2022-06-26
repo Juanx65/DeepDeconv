@@ -75,7 +75,7 @@ def test(opt):
     ########################################################
 
     """VAMOS A PROBAR CON DATA HEAVY"""
-    data_int = data_int_light
+    data_int = data_int_heavy
     #
     Nwin = data_int.shape[1] // deep_win
     # Total number of time samples to be processed
@@ -101,66 +101,48 @@ def test(opt):
         x[n_slice] = x_i
 
     """ FINALMENTE HACER LA PRUEBA"""
-    image_index = 174   # (numero de imagen dentro del batch) el maximo es 174 (data light o heavy)
-    x_hat, y_hat = model.call(x[image_index][None,:,:,:])
-    x_hat = tf.reshape(x_hat,[24,1024])
-    y_hat = tf.reshape(y_hat,[24,1024])
-    #print(x_hat, x_hat.shape)
 
-    """ GRAFICAR LOS RESULTADOS """
-    samp = 80.
+    for i in range(175):
+        image_index = i#buenos: 174;25   # (numero de imagen dentro del batch) el maximo es 174 (data light o heavy)
+        x_hat, y_hat = model.call(x[image_index][None,:,:,:])
+        x_hat = tf.reshape(x_hat,[24,1024])
+        y_hat = tf.reshape(y_hat,[24,1024])
+        #print(x_hat, x_hat.shape)
 
-    t = np.arange(x_hat.shape[1]) / samp
-    fig = plt.figure(figsize=(9, 3))
-    gs = fig.add_gridspec(1, 3)
-
-
-    #subplot1 ?
-    ax = fig.add_subplot(gs[0,1])
-    ax.set_xlim((t.min(), t.max()))
-    ax.set_xlabel("time [s]")
+        """ GRAFICAR LOS RESULTADOS """
+        samp = 80.
+        t = np.arange(x_hat.shape[1]) / samp
 
 
+        f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
+        ax1.set_title('X Original (integrado)')
+        ax2.set_title('X_hat')
+        ax3.set_title('Y_hat')
 
-    for i, wv in enumerate(x[image_index]):
-        ax.plot(t, wv - 8 * i, "tab:orange")
-        break
+        f.suptitle('DATA'+ str(i), fontsize=16)
+        #subplot1: origina
+        for i, wv in enumerate(x[image_index]):
+            ax1.plot( t, wv - 8 * i, "tab:orange")
+        plt.tight_layout()
+        plt.grid()
 
-    for letter, ax in zip("ab", fig.axes):
-        ax.set_yticks([])
-        #ax.text(x=0.0, y=1.0, transform=ax.transAxes, s=letter, **letter_params)
-        for spine in ("left", "top", "right"):
-            ax.spines[spine].set_visible(False)
-    plt.tight_layout()
+        #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
+        for i, wv in enumerate(x_hat):
+            ax2.plot(t,(15*wv - 8 * i), "tab:red")
+        plt.tight_layout()
+        plt.grid()
 
-    #subplot2 ?
+        #subplot3: y_hat->
+        for i, wv in enumerate(y_hat):
+            ax3.plot(t,wv - 8 * i, c="k")
+        plt.tight_layout()
+        plt.grid()
 
-    for i, wv in enumerate(x_hat):
-        ax.plot(t, wv - 8 * i, "tab:red")
-        break
-
-
-    for letter, ax in zip("ab", fig.axes):
-        ax.set_yticks([])
-        #ax.text(x=0.0, y=1.0, transform=ax.transAxes, s=letter, **letter_params)
-        for spine in ("left", "top", "right"):
-            ax.spines[spine].set_visible(False)
-    plt.tight_layout()
-
-    #subplot3 ?
-    for i, wv in enumerate(y_hat):
-        ax.plot(t, wv - 8 * i, c="k")
-        break
-
-    for letter, ax in zip("ab", fig.axes):
-        ax.set_yticks([])
-        #ax.text(x=0.0, y=1.0, transform=ax.transAxes, s=letter, **letter_params)
-        for spine in ("left", "top", "right"):
-            ax.spines[spine].set_visible(False)
-
-    plt.tight_layout()
-    #plt.savefig("figures/multi_cars_impulse.pdf")
-    plt.show()
+        #plt.savefig("figures/multi_cars_impulse.pdf")
+        plt.grid()
+        plt.show()
+        #input()
+        plt.close()
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
