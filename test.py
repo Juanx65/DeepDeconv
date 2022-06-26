@@ -60,7 +60,6 @@ def test(opt):
     """ CARGAR PESOS AL MODELO """
     model.load_weights(str(str(Path(__file__).parent) + opt.weights)).expect_partial()#'/checkpoints/cp-0100.ckpt'))
 
-
     """ Integrate DAS data (strain rate -> strain) """
 
     win = windows.tukey(Nt, alpha=0.1)
@@ -71,18 +70,23 @@ def test(opt):
     data_int = scipy.fft.irfft(Y_int, axis=1)
     data_int /= data_int.std()
 
-    Nwin = data_int.shape[1] // deep_win
-    # Total number of time samples to be processed
-    Nt_deep = Nwin * deep_win
-
     data_int_light = data_int[:, :int(3600 * samp)]
     data_int_heavy = data_int[:, 440_000:int(440_000 + 3600 * samp)]
     ########################################################
+
+    """VAMOS A PROBAR CON DATA HEAVY"""
+    data_int = data_int_light
+    #
+    Nwin = data_int.shape[1] // deep_win
+    # Total number of time samples to be processed
+    Nt_deep = Nwin * deep_win
+    #
     data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
     data_split = np.stack(data_split, axis=0)
     data_split = np.expand_dims(data_split, axis=-1)
     # Buffer for impulses
     batch_size = 1 # PARA TENER SOLO UN DATO EN 1 BATCH
+
     x = np.zeros_like(data_split)
     N = data_split.shape[0] // batch_size
     r = data_split.shape[0] % batch_size
@@ -97,8 +101,8 @@ def test(opt):
         x[n_slice] = x_i
 
     """ FINALMENTE HACER LA PRUEBA"""
-    POTATO = 600   # (numero de imagen dentro del batch) el maximo es 775
-    x_hat, y_hat = model.call(x[POTATO][None,:,:,:])
+    image_index = 174   # (numero de imagen dentro del batch) el maximo es 174 (data light o heavy)
+    x_hat, y_hat = model.call(x[image_index][None,:,:,:])
     x_hat = tf.reshape(x_hat,[24,1024])
     y_hat = tf.reshape(y_hat,[24,1024])
     #print(x_hat, x_hat.shape)
@@ -109,12 +113,16 @@ def test(opt):
     t = np.arange(x_hat.shape[1]) / samp
     fig = plt.figure(figsize=(9, 3))
     gs = fig.add_gridspec(1, 3)
+
+
     #subplot1 ?
-    ax = fig.add_subplot(gs[:1])
+    ax = fig.add_subplot(gs[0,1])
     ax.set_xlim((t.min(), t.max()))
     ax.set_xlabel("time [s]")
 
-    for i, wv in enumerate(x[POTATO]):
+
+
+    for i, wv in enumerate(x[image_index]):
         ax.plot(t, wv - 8 * i, "tab:orange")
         break
 
@@ -126,12 +134,11 @@ def test(opt):
     plt.tight_layout()
 
     #subplot2 ?
-    ax = fig.add_subplot(gs[1:2])
-    ax.set_xlim((t.min(), t.max()))
-    ax.set_xlabel("time [s]")
+
     for i, wv in enumerate(x_hat):
-        ax.plot(t, wv - 8 * i, c="k")
+        ax.plot(t, wv - 8 * i, "tab:red")
         break
+
 
     for letter, ax in zip("ab", fig.axes):
         ax.set_yticks([])
@@ -141,9 +148,6 @@ def test(opt):
     plt.tight_layout()
 
     #subplot3 ?
-    ax = fig.add_subplot(gs[2:])
-    ax.set_xlim((t.min(), t.max()))
-    ax.set_xlabel("time [s]")
     for i, wv in enumerate(y_hat):
         ax.plot(t, wv - 8 * i, c="k")
         break
