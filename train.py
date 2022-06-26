@@ -10,7 +10,7 @@ from models import CallBacks
 
 import tensorflow as tf
 import argparse
-#os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
     """ Variables necesarias """
@@ -81,6 +81,22 @@ def train(opt):
         data_int = data_int_heavy
     else:
         data_int = data_int_light
+
+
+
+    """DATA AUGMENTATION BEGINS"""
+    flip24 = np.flip(data_int) #invierte la lista de canales
+    data_int_flip = [ np.flip(med) for med in flip24] #invierte en tiempo
+    data_int_flip = np.array(data_int_flip)
+
+    only_time_flip = [np.flip(med) for med in data_int]
+    only_time_flip = [np.array(only_time_flip)]
+
+    print(data_int_flip.shape)
+    data_int = np.concatenate((data_int , data_int_flip , flip24, only_time_flip), axis = 1 )
+
+    """DATA AUGMENTATION ENDS"""
+
 
     Nwin = data_int.shape[1] // deep_win
     # Total number of time samples to be processed
