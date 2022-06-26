@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import h5py
 from models import UNet
 from models import CallBacks
-from models import DataGenerator
 
 import tensorflow as tf
 import argparse
@@ -94,12 +93,25 @@ def train(opt):
     data_split = np.stack(data_split, axis=0)
     data_split = np.expand_dims(data_split, axis=-1)
 
+
     # Buffer for impulses
     x = np.zeros_like(data_split)
     N = data_split.shape[0] // batch_size
     r = data_split.shape[0] % batch_size
+    #N = data_split.shape[0] // 1
+    #r = data_split.shape[0] % 1
 
-    # Loop over chunks
+    #win2 = windows.tukey(batch_size, alpha=0.1)
+
+    #for i in range(N):
+    #    n_slice = slice(i * 1, (i + 1) * 1)
+    #    x_i = data_split[n_slice]
+    #    algo = np.array(x_i)
+    #    algo2 = DataGenerator(algo,win2,batch_size,batch_size)
+    #    print(len(algo2))
+    #    x[i] =algo2
+    # Loop over chunks#
+
     for i in range(N):
         n_slice = slice(i * batch_size, (i + 1) * batch_size)
         x_i = data_split[n_slice]
@@ -109,19 +121,20 @@ def train(opt):
         n_slice = slice((i + 1) * batch_size, None)
         x_i = data_split[n_slice]
         x[n_slice] = x_i
+
     #impulses_deep = np.concatenate(np.squeeze(x), axis=1)
 
-    """ Finalmente entrenar el modelo """
     checkpoint_filepath = str(str(Path(__file__).parent) +opt.checkpoint)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         save_weights_only=True,
         monitor='val_loss',
-        mode='max',
-        save_best_only=True)
+        mode='auto',
+        save_best_only=True,
+        update_freq="epoch")
     history = model.fit(
         x,
-        validation_split=0.2,
+        validation_split=0.5,
         epochs=epochs,
         callbacks=[model_checkpoint_callback],
         batch_size=batch_size
