@@ -23,7 +23,6 @@ def train(opt):
     kerneldir =  os.path.join(cwd, opt.kernel_dir)
     data_file = os.path.join(datadir, "DAS_data.h5")
 
-    buf = 100_000
     samp = 50.
 
     epochs = opt.epochs
@@ -34,7 +33,7 @@ def train(opt):
     with h5py.File(data_file, "r") as f:
          # Nch : numero de canales, Nt = largo de muestras 8.626.100
         Nch, Nt = f["strainrate"].shape
-        split = int(0.1 * Nt)
+        split = int(0.9 * Nt)
         data = f["strainrate"][:, 0:split].astype(np.float32)
     # se normaliza cada trace respecto a su desviación estandar
     data /= data.std()
@@ -51,7 +50,7 @@ def train(opt):
     data_int = scipy.fft.irfft(Y_int, axis=1)
     data_int /= data_int.std()
 
-    # Call DataGenerator
+    """ Call DataGenerator """
     window = opt.deep_win
     samples_per_epoch = 10000 # data que se espera por epoca al entrenar
     batches = opt.batch_size
