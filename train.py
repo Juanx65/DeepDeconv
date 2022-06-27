@@ -10,6 +10,7 @@ from models import CallBacks
 from random import choice
 import tensorflow as tf
 import argparse
+from models import DataGenerator
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
@@ -29,16 +30,15 @@ def train(opt):
     """ Load DAS data """
     # DAS_data.h5 -> datos para leer (1.5GB) strain rate -> hay que integrarlos
     with h5py.File(data_file, "r") as f:
-         # Nch : numero de canales, Nt = largo de muestras (1024?), SI
+         # Nch : numero de canales, Nt = largo de muestras 8.626.100
         Nch, Nt = f["strainrate"].shape
-        split = int(0.9 * Nt)
-        data = f["strainrate"][:, split:-buf].astype(np.float32)
+        split = int(0.1 * Nt)
+        data = f["strainrate"][:, 0:split].astype(np.float32)
     # se normaliza cada trace respecto a su desviación estandar
     data /= data.std()
     Nch, Nt = data.shape
     # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
-    data_light = data[:, :int(3600 * samp)] # light traffic: lo que mencionan en el paper
-    data_heavy = data[:, 440_000:int(440_000 + 3600 * samp)] # heavy traffic
+
 
     """ Integrate DAS data (strain rate -> strain) """
     win = windows.tukey(Nt, alpha=0.1)
@@ -49,9 +49,19 @@ def train(opt):
     data_int = scipy.fft.irfft(Y_int, axis=1)
     data_int /= data_int.std()
 
-    data_int_light = data_int[:, :int(3600 * samp)]
-    data_int_heavy = data_int[:, 440_000:int(440_000 + 3600 * samp)]
+    # Call DataGenerator
+    window = opt.deep_win
+    samples_per_epoch = 10000 # data que se espera por epoca al entrenar
+    batches = opt.batch_size
+    train_val_ratio = 0.5
+    _, Nt_int = data_int.shape
+    split = int(0.5 * Nt_int)
 
+    train_raw_data = data_int[:,0:split]
+    val_raw_data = data_int[:,split:]
+
+    train_data = DataGenerator(train_raw_data, window, samples_per_epoch, batches)
+    val_data = DataGenerator(val_raw_data, window, samples_per_epoch, batches)
     ########################################3
     """ Load impulse response """
     #kernel = np.load(os.path.join(datadir, "kernel.npy"))
@@ -75,51 +85,6 @@ def train(opt):
     model.construct()
     model.compile()
 
-    ############################################################################
-    """ Formatear data para entrenar """
-    # Number of chunks
-    if opt.data_heavy:
-        data_int = data_int_heavy
-    else:
-        data_int = data_int_light
-
-    """DATA AUGMENTATION BEGINS"""
-    flip24 = np.flip(data_int) #invierte la lista de canales
-    data_int_flip = [ np.flip(med) for med in flip24] #invierte en tiempo
-    data_int_flip = np.array(data_int_flip)
-
-    only_time_flip = [np.flip(med) for med in data_int]
-    only_time_flip = np.array(only_time_flip)
-
-    #print(data_int_flip.shape)
-    data_int = np.concatenate((data_int , data_int_flip , flip24), axis = 1 )
-    """DATA AUGMENTATION ENDS"""
-
-    Nwin = data_int.shape[1] // deep_win
-    # Total number of time samples to be processed
-    Nt_deep = Nwin * deep_win
-
-    """ Mould data into right shape for UNet """
-    ########################################################
-    data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
-    data_split = np.stack(data_split, axis=0)
-    data_split = np.expand_dims(data_split, axis=-1)
-
-    # Buffer for impulses
-    x = np.zeros_like(data_split)
-    N = data_split.shape[0] // batch_size
-    r = data_split.shape[0] % batch_size
-
-    for i in range(N):
-        n_slice = slice(i * batch_size, (i + 1) * batch_size)
-        x_i = data_split[n_slice]
-        x[n_slice] = x_i
-    # If there is some residual chunk: process that too
-    if r > 0:
-        n_slice = slice((N-1 + 1) * batch_size, None)
-        x_i = data_split[n_slice]
-        x[n_slice] = x_i
-
     checkpoint_filepath = str(str(Path(__file__).parent) +opt.checkpoint)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
@@ -129,9 +94,8 @@ def train(opt):
         save_best_only=True,
         update_freq="epoch")
     history = model.fit(
-        x,
-        validation_split=0.5,
-        shuffle=True,
+        train_data,
+        validation_data=val_data,
         epochs=epochs,
         callbacks=[model_checkpoint_callback],
         batch_size=batch_size

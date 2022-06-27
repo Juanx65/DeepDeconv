@@ -80,14 +80,6 @@ class DataGenerator(keras.utils.Sequence):
             samples[i, :, :, 0] = X[:, t_slice][::flip_ch[i]][:, ::flip_t[i]]
 
         self.samples = samples
-        print(samples.shape)
-        print(samples[0])
-        print(samples[0].shape)
-        for i in range(100):
-            plt.plot(samples[i][0])
-            plt.ylim([-5,5])
-            plt.show()
-            plt.close()
         pass
 
 class CallBacks:
