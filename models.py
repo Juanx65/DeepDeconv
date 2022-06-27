@@ -10,9 +10,85 @@ from tensorflow.keras.layers import Input, Activation, concatenate
 from tensorflow.keras.layers import GaussianNoise, GaussianDropout
 #from tensorflow.keras.optimizers import Adam
 import random as python_random
+import matplotlib.pyplot as plt
+import time
+""" Setting random seeds """
+seed = 42
+
+# TensorFlow
+tf.random.set_seed(seed)
+
+# Python
+python_random.seed(seed)
+
+# NumPy (random number generator used for sampling operations)
+rng = np.random.default_rng(seed)
+
+
+
 
 def calc_padding(k, d):
     return d * (k - 1) // 2
+
+class DataGenerator(keras.utils.Sequence):
+
+    def __init__(self, X, win, Nsamples, batch_size=16):
+
+        self.X = X
+        self.Nch, self.Nt = X.shape
+        self.win = win
+        self.Nsamples = Nsamples
+        self.batch_size = batch_size
+
+        self.on_epoch_end()
+
+    def __len__(self):
+        """ Number of mini-batches per epoch """
+        return self.Nsamples // self.batch_size
+
+    def on_epoch_end(self):
+        """ Modify data """
+        self.__data_generation()
+        pass
+
+    def __getitem__(self, idx):
+        """ Select a mini-batch """
+        batch_size = self.batch_size
+        selection = slice(idx * batch_size, (idx + 1) * batch_size)
+        samples = self.samples[selection]
+        return samples
+
+    def __data_generation(self):
+        """ Generate a total batch """
+
+        win = self.win
+        X = self.X
+
+        # Number of mini-batches
+        N_batch = self.__len__()
+        N_total = N_batch * self.batch_size
+        # Buffer for mini-batches
+        print("N_Total : {}, N_Ch : {} , win : {}".format(N_total, self.Nch, win))
+        samples = np.zeros((N_total, self.Nch, win, 1))
+
+        inds = rng.integers(low=0, high=self.Nt - win, size=N_total)
+        flip_t = rng.integers(low=0, high=2, size=N_total) * 2 - 1
+        flip_ch = rng.integers(low=0, high=2, size=N_total) * 2 - 1
+
+        for i, ind in enumerate(inds):
+            t_slice = slice(ind, ind + win)
+            samples[i, :, :, 0] = X[:, t_slice][::flip_ch[i]][:, ::flip_t[i]]
+
+        self.samples = samples
+        print(samples.shape)
+        print(samples[0])
+        print(samples[0].shape)
+        for i in range(100):
+            plt.plot(samples[i][0])
+            plt.ylim([-5,5])
+            plt.show()
+            plt.close()
+        pass
 
 class CallBacks:
 
