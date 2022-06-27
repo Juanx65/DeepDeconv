@@ -68,7 +68,6 @@ class DataGenerator(keras.utils.Sequence):
         N_batch = self.__len__()
         N_total = N_batch * self.batch_size
         # Buffer for mini-batches
-        print("N_Total : {}, N_Ch : {} , win : {}".format(N_total, self.Nch, win))
         samples = np.zeros((N_total, self.Nch, win, 1))
 
         inds = rng.integers(low=0, high=self.Nt - win, size=N_total)
