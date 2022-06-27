@@ -33,7 +33,7 @@ def train(opt):
     with h5py.File(data_file, "r") as f:
          # Nch : numero de canales, Nt = largo de muestras 8.626.100
         Nch, Nt = f["strainrate"].shape
-        split = int(0.9 * Nt)
+        split = int(0.9 * Nt) #90% datos para entrenamiento y validación
         data = f["strainrate"][:, 0:split].astype(np.float32)
     # se normaliza cada trace respecto a su desviación estandar
     data /= data.std()
@@ -52,7 +52,7 @@ def train(opt):
 
     """ Call DataGenerator """
     window = opt.deep_win
-    samples_per_epoch = 10000 # data que se espera por epoca al entrenar
+    samples_per_epoch = 1000 # data que se espera por epoca al entrenar
     batches = opt.batch_size
     train_val_ratio = 0.5
     _, Nt_int = data_int.shape
