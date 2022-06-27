@@ -102,12 +102,15 @@ def test(opt):
         if suma_tot > 25000: # para considerar datos en los que ocurra algo significativo
             good_datas.write(str(i)+","+str(suma_tot)+"\n")
 
-            image_index = i
+    good_datas.close()
+
+    i = input("index data show: ")
+    while True:
+        if i != "":
+            image_index = int(i)
             x_hat, y_hat = model.call(x[image_index][None,:,:,:])
             x_hat = tf.reshape(x_hat,[24,1024])
             y_hat = tf.reshape(y_hat,[24,1024])
-            #print(x_hat, x_hat.shape)
-            print("suma: ", i, ":",suma_tot)
 
             """ GRAFICAR LOS RESULTADOS """
             samp = 80.
@@ -141,10 +144,11 @@ def test(opt):
             #plt.savefig("figures/multi_cars_impulse.pdf")
             plt.grid()
             plt.show()
-            #input()
             plt.close()
+        else:
+            break
+        i = input("index data show: ")
 
-    good_datas.close()
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
