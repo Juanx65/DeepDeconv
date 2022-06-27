@@ -39,15 +39,11 @@ def test(opt):
     with h5py.File(data_file, "r") as f:
          # Nch : numero de canales, Nt = largo de muestras (1024?), SI
         Nch, Nt = f["strainrate"].shape
-        split = int(0.9 * Nt)
-        data = f["strainrate"][:, split:-buf].astype(np.float32)
+        split = int(0.45 * Nt) #incluye todo menos train data
+        data = f["strainrate"][:, split:].astype(np.float32)
     # se normaliza cada trace respecto a su desviación estandar
     data /= data.std()
     Nch, Nt = data.shape
-    # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
-    data_light = data[:, :int(3600 * samp)] # light traffic: lo que mencionan en el paper
-    data_heavy = data[:, 440_000:int(440_000 + 3600 * samp)] # heavy traffic
-
 
     """ Init Deep Learning model """
     model = UNet(
@@ -71,16 +67,11 @@ def test(opt):
     data_int = scipy.fft.irfft(Y_int, axis=1)
     data_int /= data_int.std()
 
-    data_int_light = data_int[:, :int(3600 * samp)]
-    data_int_heavy = data_int[:, 440_000:int(440_000 + 3600 * samp)]
     ########################################################
 
-    """VAMOS A PROBAR CON DATA HEAVY"""
-    data_int = data_int_heavy
-    #
     Nwin = data_int.shape[1] // deep_win
     # Total number of time samples to be processed
-    Nt_deep = Nwin * deep_win
+    Nt_deep = Nwin * deep_win #
     #
     data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
     data_split = np.stack(data_split, axis=0)
@@ -102,49 +93,58 @@ def test(opt):
         x[n_slice] = x_i
 
     """ FINALMENTE HACER LA PRUEBA"""
+    good_datas = open("datos_buenos.txt","w")
+    for i in range(len(x)):
+        suma = sum(abs(x[i]))
+        suma_tot = [o[0] for o in suma]
+        suma_tot = sum(suma_tot)
 
-    for i in range(175):
-        image_index = i#buenos: 174;25   # (numero de imagen dentro del batch) el maximo es 174 (data light o heavy)
-        x_hat, y_hat = model.call(x[image_index][None,:,:,:])
-        x_hat = tf.reshape(x_hat,[24,1024])
-        y_hat = tf.reshape(y_hat,[24,1024])
-        #print(x_hat, x_hat.shape)
+        if suma_tot > 25000: # para considerar datos en los que ocurra algo significativo
+            good_datas.write(str(i)+","+str(suma_tot)+"\n")
 
-        """ GRAFICAR LOS RESULTADOS """
-        samp = 80.
-        t = np.arange(x_hat.shape[1]) / samp
+            image_index = i
+            x_hat, y_hat = model.call(x[image_index][None,:,:,:])
+            x_hat = tf.reshape(x_hat,[24,1024])
+            y_hat = tf.reshape(y_hat,[24,1024])
+            #print(x_hat, x_hat.shape)
+            print("suma: ", i, ":",suma_tot)
 
+            """ GRAFICAR LOS RESULTADOS """
+            # samp = 80.
+            # t = np.arange(x_hat.shape[1]) / samp
+            #
+            #
+            # f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
+            # ax1.set_title('X Original (integrado)')
+            # ax2.set_title('X_hat')
+            # ax3.set_title('Y_hat')
+            #
+            # f.suptitle('DATA'+ str(i), fontsize=16)
+            # #subplot1: origina
+            # for i, wv in enumerate(x[image_index]):
+            #     ax1.plot( t, wv - 8 * i, "tab:orange")
+            # plt.tight_layout()
+            # plt.grid()
+            #
+            # #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
+            # for i, wv in enumerate(x_hat):
+            #     ax2.plot(t,(15*wv - 8 * i), "tab:red")
+            # plt.tight_layout()
+            # plt.grid()
+            #
+            # #subplot3: y_hat->
+            # for i, wv in enumerate(y_hat):
+            #     ax3.plot(t,wv - 8 * i, c="k")
+            # plt.tight_layout()
+            # plt.grid()
+            #
+            # #plt.savefig("figures/multi_cars_impulse.pdf")
+            # plt.grid()
+            # plt.show()
+            # #input()
+            # plt.close()
 
-        f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
-        ax1.set_title('X Original (integrado)')
-        ax2.set_title('X_hat')
-        ax3.set_title('Y_hat')
-
-        f.suptitle('DATA'+ str(i), fontsize=16)
-        #subplot1: origina
-        for i, wv in enumerate(x[image_index]):
-            ax1.plot( t, wv - 8 * i, "tab:orange")
-        plt.tight_layout()
-        plt.grid()
-
-        #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
-        for i, wv in enumerate(x_hat):
-            ax2.plot(t,(15*wv - 8 * i), "tab:red")
-        plt.tight_layout()
-        plt.grid()
-
-        #subplot3: y_hat->
-        for i, wv in enumerate(y_hat):
-            ax3.plot(t,wv - 8 * i, c="k")
-        plt.tight_layout()
-        plt.grid()
-
-        #plt.savefig("figures/multi_cars_impulse.pdf")
-        plt.grid()
-        plt.show()
-        #input()
-        plt.close()
-
+    good_datas.close()
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')

@@ -39,3 +39,8 @@ Training the model:
 ```
 python train.py --epochs 1000
 ```
+
+In case "cannot be loaded because running scripts is disabled on this system":
+```
+Set-ExecutionPolicy Unrestricted -Scope Process
+```
