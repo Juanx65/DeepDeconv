@@ -13,8 +13,8 @@ import argparse
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
-    """ Variables necesarias """
 
+    """ Variables necesarias """
     cwd = os.getcwd()
     datadir = os.path.join(cwd, opt.data_dir)
     kerneldir =  os.path.join(cwd, opt.kernel_dir)
@@ -39,7 +39,6 @@ def train(opt):
     # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
     data_light = data[:, :int(3600 * samp)] # light traffic: lo que mencionan en el paper
     data_heavy = data[:, 440_000:int(440_000 + 3600 * samp)] # heavy traffic
-
 
     """ Integrate DAS data (strain rate -> strain) """
     win = windows.tukey(Nt, alpha=0.1)
@@ -76,15 +75,13 @@ def train(opt):
     model.construct()
     model.compile()
 
-    ############################################################################################
+    ############################################################################
     """ Formatear data para entrenar """
     # Number of chunks
     if opt.data_heavy:
         data_int = data_int_heavy
     else:
         data_int = data_int_light
-
-
 
     """DATA AUGMENTATION BEGINS"""
     flip24 = np.flip(data_int) #invierte la lista de canales
@@ -96,40 +93,22 @@ def train(opt):
 
     #print(data_int_flip.shape)
     data_int = np.concatenate((data_int , data_int_flip , flip24), axis = 1 )
-
     """DATA AUGMENTATION ENDS"""
-
 
     Nwin = data_int.shape[1] // deep_win
     # Total number of time samples to be processed
     Nt_deep = Nwin * deep_win
 
     """ Mould data into right shape for UNet """
-
     ########################################################
     data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
     data_split = np.stack(data_split, axis=0)
     data_split = np.expand_dims(data_split, axis=-1)
 
-
     # Buffer for impulses
     x = np.zeros_like(data_split)
     N = data_split.shape[0] // batch_size
     r = data_split.shape[0] % batch_size
-    #N = data_split.shape[0] // 1
-    #r = data_split.shape[0] % 1
-
-    #win2 = windows.tukey(batch_size, alpha=0.1)
-
-    #for i in range(N):
-    #    n_slice = slice(i * 1, (i + 1) * 1)
-    #    x_i = data_split[n_slice]
-    #    algo = np.array(x_i)
-    #    algo2 = DataGenerator(algo,win2,batch_size,batch_size)
-    #    print(len(algo2))
-    #    x[i] =algo2
-    # Loop over chunks#
-
 
     for i in range(N):
         n_slice = slice(i * batch_size, (i + 1) * batch_size)
@@ -140,11 +119,6 @@ def train(opt):
         n_slice = slice((N-1 + 1) * batch_size, None)
         x_i = data_split[n_slice]
         x[n_slice] = x_i
-
-    #AUTOTUNE = tf.data.AUTOTUNE
-    #x = x.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-
-    #impulses_deep = np.concatenate(np.squeeze(x), axis=1)
 
     checkpoint_filepath = str(str(Path(__file__).parent) +opt.checkpoint)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -183,7 +157,6 @@ def train(opt):
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
     plt.show()
-
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
