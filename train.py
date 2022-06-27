@@ -66,7 +66,7 @@ def train(opt):
     ########################################3
     """ Load impulse response """
     #kernel = np.load(os.path.join(datadir, "kernel.npy"))
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
+    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy")) # integrado
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 
@@ -74,13 +74,13 @@ def train(opt):
     rho = 10.0
     f0 = 8
     blocks = 3
-    noise = opt.dropout
+    dropout_value = opt.dropout
     deep_win = opt.deep_win
 
     """ Init Deep Learning model """
     model = UNet(
         kernel.astype(np.float32), lam=rho, f0=f0,
-        data_shape=(Nch, deep_win, 1), blocks=blocks, AA=False, bn=False, dropout=noise
+        data_shape=(Nch, deep_win, 1), blocks=blocks, AA=False, bn=False, dropout=dropout_value
     )
 
     model.construct()
@@ -150,7 +150,6 @@ def parse_opt():
     parser.add_argument('--epochs', default = 200 ,type=int,help='epoch to train')
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
     parser.add_argument('--kernel_dir', default = "kernels",type=str,help='dir to the dataset')
-    parser.add_argument('--data_heavy', default = False,type=bool,help='type of data to train, if True, it will traing with the heavy data')
     parser.add_argument('--checkpoint', default = "/checkpoints/best.ckpt",type=str,help='dir to save the weights og the training')
     parser.add_argument('--dropout', default = 1.0,type=float,help='percentage dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
