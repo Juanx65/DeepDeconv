@@ -108,7 +108,7 @@ def train(opt):
     timeString = timeID.strftime("%Y-%m-%d_%H-%M-%S")
     file_prefix = 'train_{}.json'.format(timeString)
 
-    with open('test.csv', 'w') as file:
+    with open(os.path.join('trainHistory/',file_prefix), 'w') as file:
         json.dump(history.history, file)
 
     """ Printear algunas cosas para ver como se entreno """
@@ -159,8 +159,7 @@ def parse_opt(known=False):
     return opt
 
 def main(opt):
-    log_csv = open("log_c")
-	train(opt)
+    train(opt)
 
 if __name__ == '__main__':
     opt = parse_opt()
