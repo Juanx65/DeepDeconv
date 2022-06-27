@@ -110,39 +110,39 @@ def test(opt):
             print("suma: ", i, ":",suma_tot)
 
             """ GRAFICAR LOS RESULTADOS """
-            # samp = 80.
-            # t = np.arange(x_hat.shape[1]) / samp
-            #
-            #
-            # f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
-            # ax1.set_title('X Original (integrado)')
-            # ax2.set_title('X_hat')
-            # ax3.set_title('Y_hat')
-            #
-            # f.suptitle('DATA'+ str(i), fontsize=16)
-            # #subplot1: origina
-            # for i, wv in enumerate(x[image_index]):
-            #     ax1.plot( t, wv - 8 * i, "tab:orange")
-            # plt.tight_layout()
-            # plt.grid()
-            #
-            # #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
-            # for i, wv in enumerate(x_hat):
-            #     ax2.plot(t,(15*wv - 8 * i), "tab:red")
-            # plt.tight_layout()
-            # plt.grid()
-            #
-            # #subplot3: y_hat->
-            # for i, wv in enumerate(y_hat):
-            #     ax3.plot(t,wv - 8 * i, c="k")
-            # plt.tight_layout()
-            # plt.grid()
-            #
-            # #plt.savefig("figures/multi_cars_impulse.pdf")
-            # plt.grid()
-            # plt.show()
-            # #input()
-            # plt.close()
+            samp = 80.
+            t = np.arange(x_hat.shape[1]) / samp
+
+
+            f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
+            ax1.set_title('X Original (integrado)')
+            ax2.set_title('X_hat')
+            ax3.set_title('Y_hat')
+
+            f.suptitle('DATA'+ str(i), fontsize=16)
+            #subplot1: origina
+            for i, wv in enumerate(x[image_index]):
+                ax1.plot( t, wv - 8 * i, "tab:orange")
+            plt.tight_layout()
+            plt.grid()
+
+            #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
+            for i, wv in enumerate(x_hat):
+                ax2.plot(t,(15*wv - 8 * i), "tab:red")
+            plt.tight_layout()
+            plt.grid()
+
+            #subplot3: y_hat->
+            for i, wv in enumerate(y_hat):
+                ax3.plot(t,wv - 8 * i, c="k")
+            plt.tight_layout()
+            plt.grid()
+
+            #plt.savefig("figures/multi_cars_impulse.pdf")
+            plt.grid()
+            plt.show()
+            #input()
+            plt.close()
 
     good_datas.close()
 def parse_opt(known=False):
