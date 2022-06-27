@@ -15,12 +15,13 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 def test(opt):
     cwd = os.getcwd()
     datadir = os.path.join(cwd, opt.data_dir)
+    kerneldir =  os.path.join(cwd, opt.kernel_dir)
     data_file = os.path.join(datadir, "DAS_data.h5")
     buf = 100_000
     samp = 50.
     """ CARGAR EL MODELO """
     """ Load impulse response """
-    kernel = np.load(os.path.join(datadir, "kernel.npy"))
+    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 
@@ -147,6 +148,7 @@ def test(opt):
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
+    parser.add_argument('--kernel_dir', default = "kernels",type=str,help='dir to the dataset')
     parser.add_argument('--weights',default = '/checkpoints/best.ckpt', type=str,help='load weights path')
     parser.add_argument('--optimizer', default = 'adam',type=str,help='optimizer for the model ej: adam, sgd, adamax ...')
     parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
