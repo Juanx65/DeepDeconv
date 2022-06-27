@@ -124,6 +124,7 @@ def train(opt):
     epochs_range = range(epochs)#epochs
 
     plt.figure(figsize=(8, 8))
+
     plt.subplot(3, 1, 1)
     plt.plot(epochs_range, loss1, label='Training Sparsity (L1)')
     plt.plot(epochs_range, val_loss1, label='Validation Sparsity (L1)')
@@ -135,14 +136,14 @@ def train(opt):
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Total Loss')
-    plt.show()
 
-    plt.figure(figsize=(8, 8))
     plt.subplot(3, 1, 3)
     plt.plot(epochs_range, loss2, label='Training Loss (L2)')
     plt.plot(epochs_range, val_loss2, label='Validation Loss (L2)')
     plt.legend(loc='lower right')
     plt.title('Training and Validation Loss (L2)')
+
+    plt.show()
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
