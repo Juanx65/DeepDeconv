@@ -11,6 +11,8 @@ from random import choice
 import tensorflow as tf
 import argparse
 from models import DataGenerator
+from datetime import datetime
+import json
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
@@ -101,26 +103,46 @@ def train(opt):
         batch_size=batch_size
     )
 
+
+    timeID = datetime.now()
+    timeString = timeID.strftime("%Y-%m-%d_%H-%M-%S")
+    file_prefix = 'train_{}.json'.format(timeString)
+
+    with open('test.csv', 'w') as file:
+        json.dump(history.history, file)
+
     """ Printear algunas cosas para ver como se entreno """
-    acc = history.history['l1']
-    val_acc = history.history['val_l1']
+    loss1 = history.history['l1']
+    val_loss1 = history.history['val_l1']
+
+    loss2 = history.history['l2']
+    val_loss2 = history.history['val_l2']
+
     loss = history.history['loss']
     val_loss = history.history['val_loss']
+
     epochs_range = range(epochs)#epochs
 
     plt.figure(figsize=(8, 8))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training Accuracy')
-    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+    plt.subplot(3, 1, 1)
+    plt.plot(epochs_range, loss1, label='Training Sparsity (L1)')
+    plt.plot(epochs_range, val_loss1, label='Validation Sparsity (L1)')
     plt.legend(loc='lower right')
-    plt.title('Training and Validation Accuracy')
+    plt.title('Training and Validation Sparsity')
 
-    plt.subplot(1, 2, 2)
+    plt.subplot(3, 1, 2)
     plt.plot(epochs_range, loss, label='Training Loss')
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
+    plt.title('Training and Validation Total Loss')
     plt.show()
+
+    plt.figure(figsize=(8, 8))
+    plt.subplot(3, 1, 3)
+    plt.plot(epochs_range, loss2, label='Training Loss (L2)')
+    plt.plot(epochs_range, val_loss2, label='Validation Loss (L2)')
+    plt.legend(loc='lower right')
+    plt.title('Training and Validation Loss (L2)')
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
@@ -137,6 +159,7 @@ def parse_opt(known=False):
     return opt
 
 def main(opt):
+    log_csv = open("log_c")
 	train(opt)
 
 if __name__ == '__main__':
