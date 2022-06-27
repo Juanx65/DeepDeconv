@@ -152,7 +152,7 @@ def parse_opt():
     parser.add_argument('--kernel_dir', default = "kernels",type=str,help='dir to the dataset')
     parser.add_argument('--data_heavy', default = False,type=bool,help='type of data to train, if True, it will traing with the heavy data')
     parser.add_argument('--checkpoint', default = "/checkpoints/best.ckpt",type=str,help='dir to save the weights og the training')
-    parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
+    parser.add_argument('--dropout', default = 1.0,type=float,help='percentage dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
 
     opt = parser.parse_args()
