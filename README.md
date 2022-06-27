@@ -1,5 +1,7 @@
 # DeepDeconv
 
+Deep learning based deconvolution algorithm implemented with a U-Net.
+
 #### Download data
 Download training data from:
 ```
