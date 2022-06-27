@@ -144,7 +144,7 @@ def train(opt):
 
     plt.show()
 
-def parse_opt(known=False):
+def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', default = 128, type=int,help='batch size to train')
     parser.add_argument('--epochs', default = 200 ,type=int,help='epoch to train')
@@ -155,7 +155,7 @@ def parse_opt(known=False):
     parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
 
-    opt = parser.parse_known_args()[0] if known else parser.parse_args()
+    opt = parser.parse_args()
     return opt
 
 def main(opt):
