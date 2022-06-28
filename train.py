@@ -18,16 +18,10 @@ os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
 
-    """ Variables necesarias """
-    cwd = os.getcwd()
-    samp = 50.
-    epochs = opt.epochs
-    batch_size = opt.batch_size
-
     """ Load DAS data """
-    annots = loadmat('data/ahorasi.mat')
-    data = np.array(annots["array_output"])
+    annots = loadmat('data/data_deltas.mat')
 
+    data = np.array(annots["array_output"])
     new_data = []
     for _, dato in enumerate(data):
         temp_dato = np.zeros((24, 1024))
@@ -35,16 +29,14 @@ def train(opt):
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
-
     data = new_data.reshape(10000,24,1024,1)
-    _, Nch, Nt,_ = data.shape
 
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
-    kernel = np.flip(kernel)
-    #kernel = kernel / kernel.max()
+    kernel = np.flip(kernel) #por alguna razon hay q voltear el kernel
 
     """ Some model parameters """
+    _, Nch, Nt,_ = data.shape
     rho = 10.0
     f0 = 8
     blocks = 3
@@ -71,9 +63,9 @@ def train(opt):
     history = model.fit(
         data,
         validation_split=0.5,
-        epochs=epochs,
+        epochs=opt.epochs,
         callbacks=[model_checkpoint_callback],
-        batch_size=batch_size
+        batch_size=opt.batch_size
     )
 
 
@@ -94,7 +86,7 @@ def train(opt):
     loss = history.history['loss']
     val_loss = history.history['val_loss']
 
-    epochs_range = range(epochs)#epochs
+    epochs_range = range(opt.epochs)#epochs
 
     plt.figure(figsize=(8, 8))
 

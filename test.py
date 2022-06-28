@@ -13,28 +13,14 @@ import tensorflow as tf
 import argparse
 from scipy.io import loadmat
 
-
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def test(opt):
-    cwd = os.getcwd()
-    datadir = os.path.join(cwd, opt.data_dir)
-    kerneldir =  os.path.join(cwd, opt.kernel_dir)
-    data_file = os.path.join(datadir, "DAS_data.h5")
-    buf = 100_000
-    samp = 50.
-    """ CARGAR EL MODELO """
 
-    """ Load impulse response hechos por el diego """
+    """ Load DAS data """
+    annots = loadmat('data/data_positive_deltas.mat')
 
-    annots = loadmat('data/ahorasi.mat')
-    kernel = np.array(annots["chirp_kernel"][0])
-    kernel = np.flip(kernel)
-    #kernel = kernel / kernel.max()
-    #plt.plot(kernel)
-    #plt.show()
     data = np.array(annots["array_output"])
-
     new_data = []
     for d, dato in enumerate(data):
         temp_dato = np.zeros((24, 1024))
@@ -42,30 +28,25 @@ def test(opt):
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
-
     data = new_data
 
-    #np.load(os.path.join(kerneldir,"diego_kernel.npy"))
-    # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
+    """ Load impulse response """
+    kernel = np.array(annots["chirp_kernel"][0])
+    kernel = np.flip(kernel) #por alguna razon hay q voltear el kernel
 
     """ Some model parameters """
+    _, Nch, Nt = data.shape
     rho = 10.0
     f0 = 8
     blocks = 3
     noise = opt.dropout
     deep_win = opt.deep_win
 
-    """ CARGAR DATA PARA PRUEBAS """
-    """ Load DAS data """
-
-    _,Nch, Nt = data.shape
-
     """ Init Deep Learning model """
     model = UNet(
         kernel.astype(np.float32), lam=rho, f0=f0,
         data_shape=(Nch, deep_win, 1), blocks=blocks, AA=False, bn=False, dropout=noise
     )
-
     model.construct()
     model.compile()
 
@@ -75,17 +56,6 @@ def test(opt):
     x = data
 
     """ FINALMENTE HACER LA PRUEBA"""
-    # good_datas = open("datos_buenos.txt","w")
-    # for i in range(len(x)):
-    #     suma = sum(abs(x[i]))
-    #     suma_tot = [o[0] for o in suma]
-    #     suma_tot = sum(suma_tot)
-    #
-    #     if suma_tot > 25000: # para considerar datos en los que ocurra algo significativo
-    #         good_datas.write(str(i)+","+str(suma_tot)+"\n")
-
-
-
     i = input("index data show: ")
     while True:
         if i != "":
