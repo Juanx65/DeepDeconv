@@ -117,7 +117,6 @@ class CallBacks:
 # bn                : batch normalization
 
 class UNet(keras.Model):
-
     def __init__(self, impulse_response, lam=0.0, f0=4, data_shape=(24, 1024, 1), blocks=4, AA=True, bn=False, dropout=0.0):
         super(UNet, self).__init__()
 
@@ -309,7 +308,7 @@ class UNet(keras.Model):
                 x = conv_wrap(x=x, filters=f)
 
         x = self.conv_layer(x, filters=1, kernel_size=kernel,
-                            use_bn=False, use_dropout=False, use_bias=True, activ="relu")
+                            use_bn=False, use_dropout=False, use_bias=True, activ="tanh")#"relu")
 
         self.AE = Model(inputs, x)
 

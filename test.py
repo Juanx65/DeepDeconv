@@ -27,12 +27,12 @@ def test(opt):
 
     """ Load impulse response hechos por el diego """
 
-    annots = loadmat('data/data_positive_deltas_un_delta.mat')
+    annots = loadmat('data/ahorasi.mat')
     kernel = np.array(annots["chirp_kernel"][0])
     kernel = np.flip(kernel)
-    plt.plot(kernel)
-    plt.show()
-    #[(1024),(),.. 24]
+    #kernel = kernel / kernel.max()
+    #plt.plot(kernel)
+    #plt.show()
     data = np.array(annots["array_output"])
 
     new_data = []

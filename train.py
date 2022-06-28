@@ -20,38 +20,30 @@ def train(opt):
 
     """ Variables necesarias """
     cwd = os.getcwd()
-    #datadir = os.path.join(cwd, opt.data_dir)
-    #kerneldir =  os.path.join(cwd, opt.kernel_dir)
-    #data_file = os.path.join(datadir, "DAS_data.h5")
-
     samp = 50.
-
     epochs = opt.epochs
     batch_size = opt.batch_size
 
     """ Load DAS data """
-    # DAS_data.h5 -> datos para leer (1.5GB) strain rate -> hay que integrarlos
-    annots = loadmat('data/data_positive_deltas.mat')
+    annots = loadmat('data/ahorasi.mat')
     data = np.array(annots["array_output"])
 
     new_data = []
-    for d, dato in enumerate(data):
+    for _, dato in enumerate(data):
         temp_dato = np.zeros((24, 1024))
         for ch in range(23):
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
-    data = new_data
 
-    data = data.reshape(10000,24,1024,1)
-
+    data = new_data.reshape(10000,24,1024,1)
     _, Nch, Nt,_ = data.shape
-    # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
 
-    ########################################
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
     kernel = np.flip(kernel)
+    #kernel = kernel / kernel.max()
+
     """ Some model parameters """
     rho = 10.0
     f0 = 8
@@ -67,7 +59,7 @@ def train(opt):
 
     model.construct()
     model.compile()
-    #data = tf.reshape(data,[10000, 24,1024, 1])
+
     checkpoint_filepath = str(str(Path(__file__).parent) +opt.checkpoint)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
