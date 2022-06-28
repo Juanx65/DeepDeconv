@@ -12,6 +12,7 @@ import tensorflow as tf
 import argparse
 from models import DataGenerator
 from datetime import datetime
+from scipy.io import loadmat
 import json
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
@@ -19,9 +20,9 @@ def train(opt):
 
     """ Variables necesarias """
     cwd = os.getcwd()
-    datadir = os.path.join(cwd, opt.data_dir)
-    kerneldir =  os.path.join(cwd, opt.kernel_dir)
-    data_file = os.path.join(datadir, "DAS_data.h5")
+    #datadir = os.path.join(cwd, opt.data_dir)
+    #kerneldir =  os.path.join(cwd, opt.kernel_dir)
+    #data_file = os.path.join(datadir, "DAS_data.h5")
 
     samp = 50.
 
@@ -30,45 +31,27 @@ def train(opt):
 
     """ Load DAS data """
     # DAS_data.h5 -> datos para leer (1.5GB) strain rate -> hay que integrarlos
-    with h5py.File(data_file, "r") as f:
-         # Nch : numero de canales, Nt = largo de muestras 8.626.100
-        Nch, Nt = f["strainrate"].shape
-        split = int(0.9 * Nt) #90% datos para entrenamiento y validación
-        data = f["strainrate"][:, 0:split].astype(np.float32)
-    # se normaliza cada trace respecto a su desviación estandar
-    data /= data.std()
-    Nch, Nt = data.shape
+    annots = loadmat('data/data_positive_deltas.mat')
+    data = np.array(annots["array_output"])
+
+    new_data = []
+    for d, dato in enumerate(data):
+        temp_dato = np.zeros((24, 1024))
+        for ch in range(23):
+            temp_dato[ch] = dato
+        new_data.append(temp_dato)
+    new_data = np.array(new_data)
+    data = new_data
+
+    data = data.reshape(10000,24,1024,1)
+
+    _, Nch, Nt,_ = data.shape
     # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
 
 
-    """ Integrate DAS data (strain rate -> strain) """
-    win = windows.tukey(Nt, alpha=0.1)
-    freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
-    Y = scipy.fft.rfft(win * data, axis=1)
-    Y_int = -Y / (2j * np.pi * freqs)
-    Y_int[:, 0] = 0
-    data_int = scipy.fft.irfft(Y_int, axis=1)
-    data_int /= data_int.std()
-
-    """ Call DataGenerator """
-    window = opt.deep_win
-    samples_per_epoch = 1000 # data que se espera por epoca al entrenar
-    batches = opt.batch_size
-    train_val_ratio = 0.5
-    _, Nt_int = data_int.shape
-    split = int(0.5 * Nt_int)
-
-    train_raw_data = data_int[:,0:split]
-    val_raw_data = data_int[:,split:]
-
-    train_data = DataGenerator(train_raw_data, window, samples_per_epoch, batches)
-    val_data = DataGenerator(val_raw_data, window, samples_per_epoch, batches)
-    ########################################3
+    ########################################
     """ Load impulse response """
-    #kernel = np.load(os.path.join(datadir, "kernel.npy"))
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy")) # integrado
-    # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
-    kernel = kernel / kernel.max()
+    kernel = np.array(annots["chirp_kernel"][0])
 
     """ Some model parameters """
     rho = 10.0
@@ -85,7 +68,7 @@ def train(opt):
 
     model.construct()
     model.compile()
-
+    #data = tf.reshape(data,[10000, 24,1024, 1])
     checkpoint_filepath = str(str(Path(__file__).parent) +opt.checkpoint)
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
@@ -95,8 +78,8 @@ def train(opt):
         save_best_only=True,
         update_freq="epoch")
     history = model.fit(
-        train_data,
-        validation_data=val_data,
+        data,
+        validation_split=0.5,
         epochs=epochs,
         callbacks=[model_checkpoint_callback],
         batch_size=batch_size

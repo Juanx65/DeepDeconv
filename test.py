@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import numpy as np
 import scipy.fft
+import scipy.signal
 from scipy.signal import windows
 import matplotlib.pyplot as plt
 import h5py
@@ -10,6 +11,9 @@ from models import CallBacks
 from random import choice
 import tensorflow as tf
 import argparse
+from scipy.io import loadmat
+
+
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def test(opt):
@@ -20,8 +24,25 @@ def test(opt):
     buf = 100_000
     samp = 50.
     """ CARGAR EL MODELO """
-    """ Load impulse response """
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
+
+    """ Load impulse response hechos por el diego """
+
+    annots = loadmat('data/data_positive_deltas.mat')
+    kernel = np.array(annots["chirp_kernel"][0])
+    #[(1024),(),.. 24]
+    data = np.array(annots["array_output"])
+
+    new_data = []
+    for d, dato in enumerate(data):
+        temp_dato = np.zeros((24, 1024))
+        for ch in range(23):
+            temp_dato[ch] = dato
+        new_data.append(temp_dato)
+    new_data = np.array(new_data)
+
+    data = new_data
+
+    #np.load(os.path.join(kerneldir,"diego_kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 
@@ -35,15 +56,8 @@ def test(opt):
     """ CARGAR DATA PARA PRUEBAS """
 
     """ Load DAS data """
-    # DAS_data.h5 -> datos para leer (1.5GB) strain rate -> hay que integrarlos
-    with h5py.File(data_file, "r") as f:
-         # Nch : numero de canales, Nt = largo de muestras (1024?), SI
-        Nch, Nt = f["strainrate"].shape
-        split = int(0.45 * Nt) #incluye todo menos train data
-        data = f["strainrate"][:, split:].astype(np.float32)
-    # se normaliza cada trace respecto a su desviación estandar
-    data /= data.std()
-    Nch, Nt = data.shape
+
+    _,Nch, Nt = data.shape
 
     """ Init Deep Learning model """
     model = UNet(
@@ -57,58 +71,25 @@ def test(opt):
     """ CARGAR PESOS AL MODELO """
     model.load_weights(str(str(Path(__file__).parent) + opt.weights)).expect_partial()#'/checkpoints/cp-0100.ckpt'))
 
-    """ Integrate DAS data (strain rate -> strain) """
-
-    win = windows.tukey(Nt, alpha=0.1)
-    freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
-    Y = scipy.fft.rfft(win * data, axis=1)
-    Y_int = -Y / (2j * np.pi * freqs)
-    Y_int[:, 0] = 0
-    data_int = scipy.fft.irfft(Y_int, axis=1)
-    data_int /= data_int.std()
-
-    ########################################################
-
-    Nwin = data_int.shape[1] // deep_win
-    # Total number of time samples to be processed
-    Nt_deep = Nwin * deep_win #
-    #
-    data_split = np.stack(np.split(data_int[:, :Nt_deep], Nwin, axis=-1), axis=0)
-    data_split = np.stack(data_split, axis=0)
-    data_split = np.expand_dims(data_split, axis=-1)
-    # Buffer for impulses
-    batch_size = 1 # PARA TENER SOLO UN DATO EN 1 BATCH
-
-    x = np.zeros_like(data_split)
-    N = data_split.shape[0] // batch_size
-    r = data_split.shape[0] % batch_size
-    for i in range(N):
-        n_slice = slice(i * batch_size, (i + 1) * batch_size)
-        x_i = data_split[n_slice]
-        x[n_slice] = x_i
-    # If there is some residual chunk: process that too
-    if r > 0:
-        n_slice = slice((N-1 + 1) * batch_size, None)
-        x_i = data_split[n_slice]
-        x[n_slice] = x_i
+    x = data
 
     """ FINALMENTE HACER LA PRUEBA"""
-    good_datas = open("datos_buenos.txt","w")
-    for i in range(len(x)):
-        suma = sum(abs(x[i]))
-        suma_tot = [o[0] for o in suma]
-        suma_tot = sum(suma_tot)
+    # good_datas = open("datos_buenos.txt","w")
+    # for i in range(len(x)):
+    #     suma = sum(abs(x[i]))
+    #     suma_tot = [o[0] for o in suma]
+    #     suma_tot = sum(suma_tot)
+    #
+    #     if suma_tot > 25000: # para considerar datos en los que ocurra algo significativo
+    #         good_datas.write(str(i)+","+str(suma_tot)+"\n")
 
-        if suma_tot > 25000: # para considerar datos en los que ocurra algo significativo
-            good_datas.write(str(i)+","+str(suma_tot)+"\n")
 
-    good_datas.close()
 
     i = input("index data show: ")
     while True:
         if i != "":
             image_index = int(i)
-            x_hat, y_hat = model.call(x[image_index][None,:,:,:])
+            x_hat, y_hat = model.call(x[image_index][None,:,:])
             x_hat = tf.reshape(x_hat,[24,1024])
             y_hat = tf.reshape(y_hat,[24,1024])
 
@@ -126,18 +107,21 @@ def test(opt):
             #subplot1: origina
             for i, wv in enumerate(x[image_index]):
                 ax1.plot( t, wv - 8 * i, "tab:orange")
+                break
             plt.tight_layout()
             plt.grid()
 
             #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
             for i, wv in enumerate(x_hat):
                 ax2.plot(t,(15*wv - 8 * i), "tab:red")
+                break
             plt.tight_layout()
             plt.grid()
 
             #subplot3: y_hat->
             for i, wv in enumerate(y_hat):
                 ax3.plot(t,wv - 8 * i, c="k")
+                break
             plt.tight_layout()
             plt.grid()
 
