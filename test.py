@@ -27,8 +27,11 @@ def test(opt):
 
     """ Load impulse response hechos por el diego """
 
-    annots = loadmat('data/data_positive_deltas.mat')
+    annots = loadmat('data/data_positive_deltas_un_delta.mat')
     kernel = np.array(annots["chirp_kernel"][0])
+    kernel = np.flip(kernel)
+    plt.plot(kernel)
+    plt.show()
     #[(1024),(),.. 24]
     data = np.array(annots["array_output"])
 
@@ -44,7 +47,6 @@ def test(opt):
 
     #np.load(os.path.join(kerneldir,"diego_kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
-    kernel = kernel / kernel.max()
 
     """ Some model parameters """
     rho = 10.0
@@ -54,7 +56,6 @@ def test(opt):
     deep_win = opt.deep_win
 
     """ CARGAR DATA PARA PRUEBAS """
-
     """ Load DAS data """
 
     _,Nch, Nt = data.shape

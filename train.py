@@ -48,11 +48,10 @@ def train(opt):
     _, Nch, Nt,_ = data.shape
     # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
 
-
     ########################################
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
-
+    kernel = np.flip(kernel)
     """ Some model parameters """
     rho = 10.0
     f0 = 8
