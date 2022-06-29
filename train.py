@@ -13,7 +13,7 @@ import argparse
 from models import DataGenerator
 from datetime import datetime
 import json
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
+#os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
 
@@ -40,33 +40,23 @@ def train(opt):
     Nch, Nt = data.shape
     # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
 
-
-    """ Integrate DAS data (strain rate -> strain) """
-    win = windows.tukey(Nt, alpha=0.1)
-    freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
-    Y = scipy.fft.rfft(win * data, axis=1)
-    Y_int = -Y / (2j * np.pi * freqs)
-    Y_int[:, 0] = 0
-    data_int = scipy.fft.irfft(Y_int, axis=1)
-    data_int /= data_int.std()
-
     """ Call DataGenerator """
     window = opt.deep_win
-    samples_per_epoch = 1000 # data que se espera por epoca al entrenar
+    samples_per_epoch = 100 # data que se espera por epoca al entrenar
     batches = opt.batch_size
     train_val_ratio = 0.5
-    _, Nt_int = data_int.shape
-    split = int(0.5 * Nt_int)
+    split = int(0.5 * Nt)
 
-    train_raw_data = data_int[:,0:split]
-    val_raw_data = data_int[:,split:]
+    #en este proceso no queremos integrar la data
+    train_raw_data = data[:,0:split] #data_int[:,0:split]
+    val_raw_data = data[:,split:] #data_int[:,split:]
 
     train_data = DataGenerator(train_raw_data, window, samples_per_epoch, batches)
     val_data = DataGenerator(val_raw_data, window, samples_per_epoch, batches)
     ########################################3
     """ Load impulse response """
     #kernel = np.load(os.path.join(datadir, "kernel.npy"))
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy")) # integrado
+    kernel = np.load(os.path.join(kerneldir,"kernel.npy")) # no integrado
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 

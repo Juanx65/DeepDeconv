@@ -10,7 +10,7 @@ from models import CallBacks
 from random import choice
 import tensorflow as tf
 import argparse
-os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
+#os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def test(opt):
     cwd = os.getcwd()
@@ -21,7 +21,7 @@ def test(opt):
     samp = 50.
     """ CARGAR EL MODELO """
     """ Load impulse response """
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
+    kernel = np.load(os.path.join(kerneldir,"kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
 
@@ -57,18 +57,8 @@ def test(opt):
     """ CARGAR PESOS AL MODELO """
     model.load_weights(str(str(Path(__file__).parent) + opt.weights)).expect_partial()#'/checkpoints/cp-0100.ckpt'))
 
-    """ Integrate DAS data (strain rate -> strain) """
-
-    win = windows.tukey(Nt, alpha=0.1)
-    freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
-    Y = scipy.fft.rfft(win * data, axis=1)
-    Y_int = -Y / (2j * np.pi * freqs)
-    Y_int[:, 0] = 0
-    data_int = scipy.fft.irfft(Y_int, axis=1)
-    data_int /= data_int.std()
-
     ########################################################
-
+    data_int = data
     Nwin = data_int.shape[1] // deep_win
     # Total number of time samples to be processed
     Nt_deep = Nwin * deep_win #
