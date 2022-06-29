@@ -24,13 +24,13 @@ def test(opt):
     data = np.array(annots["array_output"])
     new_data = []
     for _, dato in enumerate(data):
-        phase = randint(0,42)
+        phase = randint(0,8)
         temp_dato = np.zeros((24, 1024))
         #primer canal
         temp_dato[0] = dato
         #siguientes canales
         for ch in range(1,23):
-            dato  = fill_channel(dato, (ch+1)*phase)
+            dato  = fill_channel(dato, (ch+1)*phase) #comentar si deseas entrenar con todos los canales iguales
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
@@ -89,7 +89,7 @@ def test(opt):
 
             #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
             for i, wv in enumerate(x_hat):
-                ax2.plot(t,(wv - 8 * i), "tab:red")
+                ax2.plot(t,(10*wv - 8 * i), "tab:red")
                 #break
             plt.tight_layout()
             plt.grid()

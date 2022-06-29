@@ -15,6 +15,7 @@ from datetime import datetime
 from scipy.io import loadmat
 from random import randint
 import json
+
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
@@ -25,13 +26,13 @@ def train(opt):
     data = np.array(annots["array_output"])
     new_data = []
     for _, dato in enumerate(data):
-        phase = randint(0,42)
+        phase = randint(0,8)#42
         temp_dato = np.zeros((24, 1024))
         #primer canal
         temp_dato[0] = dato
         #siguientes canales
         for ch in range(1,23):
-            dato  = fill_channel(dato, (ch+1)*phase)
+            dato  = fill_channel(dato, (ch+1)*phase) #comentar si deseas entrenar con todos los canales iguales
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
