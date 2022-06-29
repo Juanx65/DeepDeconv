@@ -12,19 +12,25 @@ from random import choice
 import tensorflow as tf
 import argparse
 from scipy.io import loadmat
+from random import randint
 
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def test(opt):
 
     """ Load DAS data """
-    annots = loadmat('data/data_positive_deltas.mat')
+    annots = loadmat('data/data_deltas.mat')
 
     data = np.array(annots["array_output"])
     new_data = []
-    for d, dato in enumerate(data):
+    for _, dato in enumerate(data):
+        phase = randint(0,42)
         temp_dato = np.zeros((24, 1024))
-        for ch in range(23):
+        #primer canal
+        temp_dato[0] = dato
+        #siguientes canales
+        for ch in range(1,23):
+            dato  = fill_channel(dato, (ch+1)*phase)
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
@@ -32,7 +38,7 @@ def test(opt):
 
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
-    kernel = np.flip(kernel) #por alguna razon hay q voltear el kernel
+    kernel = np.flip(kernel) #ya no se necesita flipiar, al parecer
 
     """ Some model parameters """
     _, Nch, Nt = data.shape
@@ -78,21 +84,21 @@ def test(opt):
             #subplot1: origina
             for i, wv in enumerate(x[image_index]):
                 ax1.plot( t, wv - 8 * i, "tab:orange")
-                break
+                #break
             plt.tight_layout()
             plt.grid()
 
             #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
             for i, wv in enumerate(x_hat):
                 ax2.plot(t,(15*wv - 8 * i), "tab:red")
-                break
+                #break
             plt.tight_layout()
             plt.grid()
 
             #subplot3: y_hat->
             for i, wv in enumerate(y_hat):
-                ax3.plot(t,wv - 8 * i, c="k")
-                break
+                ax3.plot(t,15*wv - 8 * i, c="k")
+                #break
             plt.tight_layout()
             plt.grid()
 
@@ -103,6 +109,19 @@ def test(opt):
         else:
             break
         i = input("index data show: ")
+
+## desfase de data para cada canal de manera circular
+## lista: dato Original
+## idx: indice a partir de donde se copia del primer dato
+def fill_channel(lista,idx):
+    channel =np.zeros(len(lista))
+
+    for i  in range(len(lista[idx:])):
+        channel[idx + i] = lista[i]
+
+
+    return channel
+
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()

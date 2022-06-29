@@ -13,6 +13,7 @@ import argparse
 from models import DataGenerator
 from datetime import datetime
 from scipy.io import loadmat
+from random import randint
 import json
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
@@ -24,8 +25,13 @@ def train(opt):
     data = np.array(annots["array_output"])
     new_data = []
     for _, dato in enumerate(data):
+        phase = randint(0,42)
         temp_dato = np.zeros((24, 1024))
-        for ch in range(23):
+        #primer canal
+        temp_dato[0] = dato
+        #siguientes canales
+        for ch in range(1,23):
+            dato  = fill_channel(dato, (ch+1)*phase)
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
@@ -33,7 +39,7 @@ def train(opt):
 
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
-    kernel = np.flip(kernel) #por alguna razon hay q voltear el kernel
+    kernel = np.flip(kernel)
 
     """ Some model parameters """
     _, Nch, Nt,_ = data.shape
@@ -109,6 +115,19 @@ def train(opt):
     plt.title('Training and Validation Loss (L2)')
 
     plt.show()
+
+## desfase de data para cada canal de manera circular
+## lista: dato Original
+## idx: indice a partir de donde se copia del primer dato
+def fill_channel(lista,idx):
+    channel =np.zeros(len(lista))
+
+    for i  in range(len(lista[idx:])):
+        channel[idx + i] = lista[i]
+
+
+    return channel
+
 
 def parse_opt():
     parser = argparse.ArgumentParser()
