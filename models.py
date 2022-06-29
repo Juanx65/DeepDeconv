@@ -309,7 +309,7 @@ class UNet(keras.Model):
                 x = conv_wrap(x=x, filters=f)
 
         x = self.conv_layer(x, filters=1, kernel_size=kernel,
-                            use_bn=False, use_dropout=False, use_bias=True, activ="tanh")
+                            use_bn=False, use_dropout=False, use_bias=True, activ="relu")
 
         self.AE = Model(inputs, x)
 

@@ -24,6 +24,7 @@ def test(opt):
     kernel = np.load(os.path.join(kerneldir,"kernel.npy"))
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
+    #kernel = np.flip(kernel)
 
     """ Some model parameters """
     rho = 10.0

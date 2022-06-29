@@ -13,7 +13,7 @@ import argparse
 from models import DataGenerator
 from datetime import datetime
 import json
-#os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
 
@@ -42,7 +42,7 @@ def train(opt):
 
     """ Call DataGenerator """
     window = opt.deep_win
-    samples_per_epoch = 100 # data que se espera por epoca al entrenar
+    samples_per_epoch = 1000 # data que se espera por epoca al entrenar
     batches = opt.batch_size
     train_val_ratio = 0.5
     split = int(0.5 * Nt)
@@ -59,6 +59,7 @@ def train(opt):
     kernel = np.load(os.path.join(kerneldir,"kernel.npy")) # no integrado
     # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
     kernel = kernel / kernel.max()
+    #kernel = np.flip(kernel)
 
     """ Some model parameters """
     rho = 10.0
