@@ -30,7 +30,7 @@ def test(opt):
         temp_dato[0] = dato
         #siguientes canales
         for ch in range(1,23):
-            #sdato  = fill_channel(dato, (ch+1)*phase) #comentar si deseas entrenar con todos los canales iguales
+            #dato  = fill_channel(dato, (ch+1)*phase) #comentar si deseas entrenar con todos los canales iguales
             temp_dato[ch] = dato
         new_data.append(temp_dato)
     new_data = np.array(new_data)
