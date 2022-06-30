@@ -1,4 +1,3 @@
-
 import numpy as np
 from functools import partial
 
@@ -118,6 +117,7 @@ class CallBacks:
 # bn                : batch normalization
 
 class UNet(keras.Model):
+
     def __init__(self, impulse_response, lam=0.0, f0=4, data_shape=(24, 1024, 1), blocks=4, AA=True, bn=False, dropout=0.0):
         super(UNet, self).__init__()
 
@@ -142,17 +142,8 @@ class UNet(keras.Model):
         pass
 
     def call(self, x):
-
         x_hat = self.AE(x)
-        Nch, Nt,_= self.data_shape
-        N_kernel = self.impulse_response.shape[1] #deberia ser 512
-
-        paddings = tf.constant([[0, 0], [0, 0], [N_kernel//2, 0], [0,0]])
-        x_hat_padding = tf.pad(x_hat,paddings, mode='CONSTANT')
-
-        y_hat = tf.nn.conv2d(x_hat_padding, self.impulse_response, padding="SAME", strides=1)
-        y_hat = y_hat[:,:,:Nt,:]
-
+        y_hat = tf.nn.conv2d(x_hat, self.impulse_response, padding="SAME", strides=1)#{value for value in variable}
         return x_hat, y_hat
 
     def compile(self):#, opt):
@@ -318,7 +309,7 @@ class UNet(keras.Model):
                 x = conv_wrap(x=x, filters=f)
 
         x = self.conv_layer(x, filters=1, kernel_size=kernel,
-                            use_bn=False, use_dropout=False, use_bias=True, activ="tanh")#"relu")
+                            use_bn=False, use_dropout=False, use_bias=True, activ="relu")
 
         self.AE = Model(inputs, x)
 
