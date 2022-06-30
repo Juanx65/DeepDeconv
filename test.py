@@ -109,26 +109,26 @@ def test(opt):
 
 
             f, (ax1, ax2,ax3) = plt.subplots(1, 3, sharey=True)
-            ax1.set_title('X Original (integrado)')
-            ax2.set_title('X_hat')
-            ax3.set_title('Y_hat')
+            ax1.set_title('S')
+            ax2.set_title('E_hat')
+            ax3.set_title('S_hat')
 
             f.suptitle('DATA'+ str(i), fontsize=16)
             #subplot1: origina
             for i, wv in enumerate(x[image_index]):
-                ax1.plot( t, wv - 8 * i, "tab:orange")
+                ax1.plot( t, wv - 8 * i, "tab:orange",linewidth=2.5)
             plt.tight_layout()
             plt.grid()
 
             #subplot2: x_hat-> estimación de la entrada (conv kernel con la salida)
             for i, wv in enumerate(x_hat):
-                ax2.plot(t,(15*wv - 8 * i), "tab:red")
+                ax2.plot(t,(15*wv - 8 * i), "tab:red",linewidth=2.5)
             plt.tight_layout()
             plt.grid()
 
             #subplot3: y_hat->
             for i, wv in enumerate(y_hat):
-                ax3.plot(t,wv - 8 * i, c="k")
+                ax3.plot(t,wv - 8 * i, c="k",linewidth=2.5)
             plt.tight_layout()
             plt.grid()
 
