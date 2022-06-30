@@ -12,65 +12,38 @@ import tensorflow as tf
 import argparse
 from models import DataGenerator
 from datetime import datetime
+from scipy.io import loadmat
+from random import randint
 import json
+
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
 def train(opt):
 
-    """ Variables necesarias """
-    cwd = os.getcwd()
-    datadir = os.path.join(cwd, opt.data_dir)
-    kerneldir =  os.path.join(cwd, opt.kernel_dir)
-    data_file = os.path.join(datadir, "DAS_data.h5")
-
-    samp = 50.
-
-    epochs = opt.epochs
-    batch_size = opt.batch_size
-
     """ Load DAS data """
-    # DAS_data.h5 -> datos para leer (1.5GB) strain rate -> hay que integrarlos
-    with h5py.File(data_file, "r") as f:
-         # Nch : numero de canales, Nt = largo de muestras 8.626.100
-        Nch, Nt = f["strainrate"].shape
-        split = int(0.9 * Nt) #90% datos para entrenamiento y validación
-        data = f["strainrate"][:, 0:split].astype(np.float32)
-    # se normaliza cada trace respecto a su desviación estandar
-    data /= data.std()
-    Nch, Nt = data.shape
-    # Shape: 24 x 180_000 (son 24 sensores/canales, y 180_000 muestras?)
+    annots = loadmat('data/data_deltas.mat')
 
+    data = np.array(annots["array_output"])
+    new_data = []
+    for _, dato in enumerate(data):
+        phase = randint(0,8)#42
+        temp_dato = np.zeros((24, 1024))
+        #primer canal
+        temp_dato[0] = dato
+        #siguientes canales
+        for ch in range(1,23):
+            dato  = fill_channel(dato, (ch+1)*phase) #comentar si deseas entrenar con todos los canales iguales
+            temp_dato[ch] = dato
+        new_data.append(temp_dato)
+    new_data = np.array(new_data)
+    data = new_data.reshape(10000,24,1024,1)
 
-    """ Integrate DAS data (strain rate -> strain) """
-    win = windows.tukey(Nt, alpha=0.1)
-    freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
-    Y = scipy.fft.rfft(win * data, axis=1)
-    Y_int = -Y / (2j * np.pi * freqs)
-    Y_int[:, 0] = 0
-    data_int = scipy.fft.irfft(Y_int, axis=1)
-    data_int /= data_int.std()
-
-    """ Call DataGenerator """
-    window = opt.deep_win
-    samples_per_epoch = 1000 # data que se espera por epoca al entrenar
-    batches = opt.batch_size
-    train_val_ratio = 0.5
-    _, Nt_int = data_int.shape
-    split = int(0.5 * Nt_int)
-
-    train_raw_data = data_int[:,0:split]
-    val_raw_data = data_int[:,split:]
-
-    train_data = DataGenerator(train_raw_data, window, samples_per_epoch, batches)
-    val_data = DataGenerator(val_raw_data, window, samples_per_epoch, batches)
-    ########################################3
     """ Load impulse response """
-    #kernel = np.load(os.path.join(datadir, "kernel.npy"))
-    kernel = np.load(os.path.join(kerneldir,"i_kernel.npy")) # integrado
-    # Se normaliza el kernel respecto al máximo (a diferencia de las traces DAS que se normalizan respecto a la desviación estandar)
-    kernel = kernel / kernel.max()
+    kernel = np.array(annots["chirp_kernel"][0])
+    kernel = np.flip(kernel)
 
     """ Some model parameters """
+    _, Nch, Nt,_ = data.shape
     rho = 10.0
     f0 = 8
     blocks = 3
@@ -95,11 +68,11 @@ def train(opt):
         save_best_only=True,
         update_freq="epoch")
     history = model.fit(
-        train_data,
-        validation_data=val_data,
-        epochs=epochs,
+        data,
+        validation_split=0.5,
+        epochs=opt.epochs,
         callbacks=[model_checkpoint_callback],
-        batch_size=batch_size
+        batch_size=opt.batch_size
     )
 
 
@@ -120,7 +93,7 @@ def train(opt):
     loss = history.history['loss']
     val_loss = history.history['val_loss']
 
-    epochs_range = range(epochs)#epochs
+    epochs_range = range(opt.epochs)#epochs
 
     plt.figure(figsize=(8, 8))
 
@@ -143,6 +116,19 @@ def train(opt):
     plt.title('Training and Validation Loss (L2)')
 
     plt.show()
+
+## desfase de data para cada canal de manera circular
+## lista: dato Original
+## idx: indice a partir de donde se copia del primer dato
+def fill_channel(lista,idx):
+    channel =np.zeros(len(lista))
+
+    for i  in range(len(lista[idx:])):
+        channel[idx + i] = lista[i]
+
+
+    return channel
+
 
 def parse_opt():
     parser = argparse.ArgumentParser()
