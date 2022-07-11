@@ -1,3 +1,6 @@
+####################################################################################################
+"""IMPORTS SECTION"""
+####################################################################################################
 import os
 from pathlib import Path
 import numpy as np
@@ -12,6 +15,10 @@ import tensorflow as tf
 import argparse
 os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION']='.10'
 
+
+####################################################################################################
+""" TEST FUNCTION """
+####################################################################################################
 def test(opt):
     cwd = os.getcwd()
     datadir = os.path.join(cwd, opt.data_dir)
@@ -19,6 +26,8 @@ def test(opt):
     data_file = os.path.join(datadir, "DAS_data.h5")
     buf = 100_000
     samp = 50.
+
+
     """ CARGAR EL MODELO """
     """ Load impulse response """
     kernel = np.load(os.path.join(kerneldir,"i_kernel.npy"))
@@ -57,8 +66,8 @@ def test(opt):
     """ CARGAR PESOS AL MODELO """
     model.load_weights(str(str(Path(__file__).parent) + opt.weights)).expect_partial()#'/checkpoints/cp-0100.ckpt'))
 
+    ##############################################################
     """ Integrate DAS data (strain rate -> strain) """
-
     win = windows.tukey(Nt, alpha=0.1)
     freqs = scipy.fft.rfftfreq(Nt, d=1/samp)
     Y = scipy.fft.rfft(win * data, axis=1)
