@@ -25,6 +25,7 @@ def test(opt):
     new_data = []
     for _, dato in enumerate(data):
         phase = randint(0,8)
+        #phase = randint(0,8) if opt.phase else 0
         temp_dato = np.zeros((24, 1024))
         #primer canal
         temp_dato[0] = dato
@@ -36,9 +37,13 @@ def test(opt):
     new_data = np.array(new_data)
     data = new_data
 
+    #convert data.npy  into h5
     """ Load impulse response """
     kernel = np.array(annots["chirp_kernel"][0])
     kernel = np.flip(kernel) #ya no se necesita flipiar, al parecer
+
+    np.save("chirp_kernel.npy", kernel)
+
 
     """ Some model parameters """
     _, Nch, Nt = data.shape
@@ -122,7 +127,7 @@ def fill_channel(lista,idx):
     return channel
 
 
-def parse_opt(known=False):
+def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default = "data",type=str,help='dir to the dataset')
     parser.add_argument('--kernel_dir', default = "kernels",type=str,help='dir to the dataset')
@@ -131,7 +136,7 @@ def parse_opt(known=False):
     parser.add_argument('--dropout', default = 1.0,type=float,help='% dropout to use')
     parser.add_argument('--deep_win', default = 1024,type=int,help='Number of samples per chunk')
 
-    opt = parser.parse_known_args()[0] if known else parser.parse_args()
+    opt = parser.parse_args()
     return opt
 
 def main(opt):
