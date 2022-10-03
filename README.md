@@ -2,6 +2,8 @@
 
 Deep learning based deconvolution algorithm implemented with a U-Net.
 
+Please see also: https://github.com/Juanx65/DeepDeconvV2
+
 #### Download data
 Download training data from:
 ```
